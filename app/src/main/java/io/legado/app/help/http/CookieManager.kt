@@ -1,6 +1,6 @@
 package io.legado.app.help.http
 
-import android.webkit.CookieManager
+import android.webkit.WebView
 import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
 import io.legado.app.help.CacheManager
@@ -143,11 +143,17 @@ object CookieManager {
     fun applyToWebView(url: String) {
         val baseUrl = NetworkUtils.getBaseUrl(url) ?: return
         val cookies = CookieStore.getCookie(url).splitNotBlank(";")
-        val cookieManager = CookieManager.getInstance()
-        cookieManager.removeSessionCookies(null)
+        val cookieManager = android.webkit.CookieManager.getInstance()
         cookies.forEach {
             cookieManager.setCookie(baseUrl, it)
         }
+        cookieManager.flush()
+    }
+
+    fun setAcceptForWebView(webView: WebView) {
+        val cookieManager = android.webkit.CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        cookieManager.setAcceptThirdPartyCookies(webView, true)
     }
 
     fun List<Cookie>.getString() = buildString {

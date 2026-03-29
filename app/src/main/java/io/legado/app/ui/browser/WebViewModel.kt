@@ -90,29 +90,40 @@ class WebViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
-    fun saveVerificationResult(webView: WebView, success: () -> Unit) {
+    fun saveVerificationResult(
+        webView: WebView,
+        sawCloudflareChallenge: Boolean = false,
+        success: () -> Unit
+    ) {
         if (!sourceVerificationEnable) {
             return success.invoke()
         }
-        if (refetchAfterSuccess) {
+        if (
+            !VerificationResultPolicy.shouldUseCurrentPageHtml(
+                refetchAfterSuccess = refetchAfterSuccess,
+                sawCloudflareChallenge = sawCloudflareChallenge
+            )
+        ) {
             execute {
                 val url = intent!!.getStringExtra("url")!!
                 val source = appDb.bookSourceDao.getBookSource(sourceOrigin)
-                html = AnalyzeUrl(
+                val response = AnalyzeUrl(
                     url,
                     headerMapF = headerMap,
                     source = source,
                     coroutineContext = coroutineContext
-                ).getStrResponseAwait(useWebView = false).body
-                SourceVerificationHelp.setResult(sourceOrigin, html ?: "")
+                ).getStrResponseAwait(useWebView = false)
+                html = response.body
+                SourceVerificationHelp.setResult(sourceOrigin, html ?: "", response.url)
             }.onSuccess {
                 success.invoke()
             }
         } else {
+            val currentUrl = webView.url.orEmpty()
             webView.evaluateJavascript("document.documentElement.outerHTML") {
                 execute {
                     html = StringEscapeUtils.unescapeJson(it).trim('"')
-                    SourceVerificationHelp.setResult(sourceOrigin, html ?: "")
+                    SourceVerificationHelp.setResult(sourceOrigin, html ?: "", currentUrl)
                 }.onSuccess {
                     success.invoke()
                 }

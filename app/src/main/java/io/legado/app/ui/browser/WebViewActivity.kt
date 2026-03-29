@@ -107,7 +107,10 @@ class WebViewActivity : VMBaseActivity<ActivityWebViewBinding, WebViewModel>() {
             R.id.menu_copy_url -> sendToClip(viewModel.baseUrl)
             R.id.menu_ok -> {
                 if (viewModel.sourceVerificationEnable) {
-                    viewModel.saveVerificationResult(binding.webView) {
+                    viewModel.saveVerificationResult(
+                        binding.webView,
+                        sawCloudflareChallenge = isCloudflareChallenge
+                    ) {
                         finish()
                     }
                 } else {
@@ -155,6 +158,7 @@ class WebViewActivity : VMBaseActivity<ActivityWebViewBinding, WebViewModel>() {
         //binding.progressBar.fontColor = accentColor
         binding.webView.webChromeClient = CustomWebChromeClient()
         binding.webView.webViewClient = CustomWebViewClient()
+        AppCookieManager.setAcceptForWebView(binding.webView)
         binding.webView.settings.apply {
             setDarkeningAllowed(AppConfig.isNightTheme)
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
@@ -165,9 +169,7 @@ class WebViewActivity : VMBaseActivity<ActivityWebViewBinding, WebViewModel>() {
             javaScriptEnabled = true
             builtInZoomControls = true
             displayZoomControls = false
-            headerMap[AppConst.UA_NAME]?.let {
-                userAgentString = it
-            }
+            userAgentString = headerMap[AppConst.UA_NAME] ?: AppConfig.userAgent
         }
         AppCookieManager.applyToWebView(url)
         binding.webView.setOnLongClickListener {
@@ -275,7 +277,10 @@ class WebViewActivity : VMBaseActivity<ActivityWebViewBinding, WebViewModel>() {
                     if (it == "true") {
                         isCloudflareChallenge = true
                     } else if (isCloudflareChallenge && viewModel.sourceVerificationEnable) {
-                        viewModel.saveVerificationResult(binding.webView) {
+                        viewModel.saveVerificationResult(
+                            binding.webView,
+                            sawCloudflareChallenge = true
+                        ) {
                             finish()
                         }
                     }

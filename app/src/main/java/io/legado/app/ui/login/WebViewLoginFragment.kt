@@ -66,6 +66,7 @@ class WebViewLoginFragment : BaseFragment(R.layout.fragment_web_view_login) {
     @SuppressLint("SetJavaScriptEnabled")
     private fun initWebView(source: BaseSource) {
         //binding.progressBar.fontColor = accentColor
+        io.legado.app.help.http.CookieManager.setAcceptForWebView(binding.webView)
         binding.webView.settings.apply {
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             domStorageEnabled = true
@@ -74,9 +75,8 @@ class WebViewLoginFragment : BaseFragment(R.layout.fragment_web_view_login) {
             builtInZoomControls = true
             javaScriptEnabled = true
             displayZoomControls = false
-            viewModel.headerMap[AppConst.UA_NAME]?.let {
-                userAgentString = it
-            }
+            userAgentString = viewModel.headerMap[AppConst.UA_NAME]
+                ?: io.legado.app.help.config.AppConfig.userAgent
         }
         val cookieManager = CookieManager.getInstance()
         binding.webView.webViewClient = object : WebViewClient() {
